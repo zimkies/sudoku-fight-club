@@ -204,7 +204,7 @@ def deduce(board):
       if guess is not None: random.shuffle(guess)
       return guess
 
-# Takes a board and returns in bitmast format:
+# Takes a board and returns in bitmask format:
 #   allowed: A list of all directly allowed numbers for each position
 #     eg [123, 231, 231 ...] 81 of them in linear order.
 #   needed: A list of missing numbers for each row/axis combination
