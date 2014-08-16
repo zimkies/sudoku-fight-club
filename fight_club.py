@@ -63,21 +63,34 @@ def cgimain():
     else: sys.stdout.write(str(puzzle[pos] + 1))
     sys.stdout.write(segments[pos + 1].replace('####', ratingstr))
 
+# Take a valid solved sudoku board and return a sudoku puzzle from it
 def makepuzzle(board):
   puzzle = []; deduced = [None] * 81
   order = random.sample(xrange(81), 81)
+  # Start with a blank deduced board, randomly add correct numbers to it, deduce.
+  # keep track of those numbers/positions in puzzle.
   for pos in order:
     if deduced[pos] is None:
       puzzle.append((pos, board[pos]))
       deduced[pos] = board[pos]
       deduce(deduced)
   random.shuffle(puzzle)
+
+  # For all hints that we gave TODO
   for i in xrange(len(puzzle) - 1, -1, -1):
     e = puzzle[i]; del puzzle[i]
     rating = checkpuzzle(boardforentries(puzzle), board)
     if rating == -1: puzzle.append(e)
   return boardforentries(puzzle)
 
+
+# Return a difficulty rating for a puzzle
+# Solves the puzzle 'samples' numbers of times.
+#
+# returns -1 if it's not solvable.
+# The difficulty rating of a puzzle is equal to the length of 'state' in
+# a solved solution.
+# Which is essentially the number of guesses you had to make I think.
 def ratepuzzle(puzzle, samples):
   total = 0
   for i in xrange(samples):
@@ -86,6 +99,12 @@ def ratepuzzle(puzzle, samples):
     total += len(state)
   return float(total) / samples
 
+# Returns the difficulty rating of a puzzle or -1 if it is not valid.
+# Takes an option 'board' parameter which is the puzzle's solution.
+#
+# If you pass in a solution, it checks that our solver gives that solution.
+# It also makes sure that there are no alternative solutions by solving
+# from the remaining state.
 def checkpuzzle(puzzle, board = None):
   state, answer = solveboard(puzzle)
   if answer is None: return -1
@@ -95,19 +114,33 @@ def checkpuzzle(puzzle, board = None):
   if second is not None: return -1
   return difficulty
 
-# Originally board is [None]*81
+# Find a solution to a board. Note that the starting board can just
+# be an empy board, so the solution is not necessarily unique.
 def solution(board):
   return solveboard(board)[1]
 
+# Take a starting board and solve it.
+# Returns (state, solution) Not sure what state is
+#
+# It first deduces as far as possible.
+# If it's stuck, it calls solvenext to solve it.
 def solveboard(original):
-  # print "original",  original
   board = list(original)
   guesses = deduce(board)
-  print "guesses", guesses
   if guesses is None: return ([], board)
   track = [(guesses, 0, board)]
   return solvenext(track)
 
+# def solvenext
+#   takes a list of tuples [(guesses, guess_index, board)]
+#   returns [state, solution]
+#
+# Uses DFS - keeps appending guesses to the stack. If there are
+# If we have gone through all guesses, ignore this board state
+# Otherwise put the next guess on the stack
+# Otherwise, try the current guess, deduce it (return if won),
+# and append each of it's guesses to the stack.
+#
 def solvenext(remembered):
   while len(remembered) > 0:
     guesses, c, board = remembered.pop()
@@ -121,14 +154,15 @@ def solvenext(remembered):
     remembered.append((guesses, 0, workspace))
   return ([], None)
 
-# Take a board - if there is a position in it that doesnt have a
-# valid option, return []
+# deduce(board):
+# Take a board and solve it as far as can be deduced without guessing.
+# Returns:
+#   a best guess for the next spot to try,
+#   or None if it is solved
+#   or [] if it is in an invalid state (no legal moves)
 #
-# If there are any positions with only 1 option, fill them in and move the
-# next step.
-#
-# If there are no simply solvable positions, make a guess
-#
+# Deduction is done first by looking for direct conflicts at every spot
+# And then by eliminating other locations along a column.
 def deduce(board):
   while True:
     stuck, guess, count = True, None, 0
@@ -142,15 +176,25 @@ def deduce(board):
         elif stuck:
           guess, count = pickbetter(guess, count, [(pos, n) for n in numbers])
     if not stuck: allowed, needed = figurebits(board)
-    # fill in any spots determined by elimination of other locations
+
+    # fill in any spots determined by elimination of other locations.
+    # For any given column, find which numbers it is missing,
+    # And figure out which positions allow those numbers - if only
+    # one position allows it, the number goes there.
+    #
+    # If more than one spot is available, add to the guesses.
     for axis in xrange(3):
       for x in xrange(9):
         numbers = listbits(needed[axis * 9 + x])
         for n in numbers:
           bit = 1 << n
+          # spots =for this number & col, all positions that allow the needed
+          # numbers
           spots = []
+
           for y in xrange(9):
             pos = posfor(x, y, axis)
+            # if this position allows the needed number, add it to spots
             if allowed[pos] & bit: spots.append(pos)
           if len(spots) == 0: return []
           elif len(spots) == 1: board[spots[0]] = n; stuck = False
@@ -160,9 +204,11 @@ def deduce(board):
       if guess is not None: random.shuffle(guess)
       return guess
 
-# Takes a board and returns:
+# Takes a board and returns in bitmast format:
 #   allowed: A list of all directly allowed numbers for each position
+#     eg [123, 231, 231 ...] 81 of them in linear order.
 #   needed: A list of missing numbers for each row/axis combination
+#     eg [123, 511, 234, 1 ...] columns, then rows, then boxes. (Should be 27)
 def figurebits(board):
   allowed, needed = [e is None and 511 or 0 for e in board], []
   for axis in xrange(3):
@@ -197,6 +243,7 @@ def axismissing(board, x, axis):
   return 511 ^ bits
 
 # Return the list of numbers that a bitmask represents
+# eg listbits(123) -> [1, 2, 6, 9]
 def listbits(bits):
   return [y for y in xrange(9) if 0 != bits & 1 << y]
 
@@ -211,7 +258,14 @@ def allowed(board, pos):
     bits &= axismissing(board, x, axis)
   return bits
 
-# t is a list of [(integer_position, possible_numbers)]
+# b is guess
+# c is count
+# t is a list of [(integer_position, allowed_number)]
+# SO t could be [(25, 1), (25, 2), (25, 8)]
+#
+# Returns (guess, count) eg ([(25, 1), (25, 2)], 1)
+# If we have no guess, just return the list of t with count 1
+# If we
 def pickbetter(b, c, t):
   if b is None or len(t) < len(b): return (t, 1)
   if len(t) > len(b): return (b, c)
@@ -221,20 +275,26 @@ def pickbetter(b, c, t):
 def entriesforboard(board):
   return [(pos, board[pos]) for pos in xrange(81) if board[pos] is not None]
 
+# takes entries [(0, 4)..(80, 2)]
+# And returns a board [4, .., 2]
 def boardforentries(entries):
   board = [None] * 81
   for pos, n in entries: board[pos] = n
   return board
 
+# Tests equivalence of 2 boards.
 def boardmatches(b1, b2):
   for i in xrange(81):
     if b1[i] != b2[i]: return False
   return True
 
+# Return the printable version of a sudoku number
+# Sudoku numbers are 1 more than their stored state.
 def printcode(n):
   if n is None: return '_'
   return str(n + 1)
 
+# Print the board
 def printboard(board):
   out = ""
   for row in xrange(9):
@@ -244,6 +304,7 @@ def printboard(board):
     out += ('\n','\n','\n\n','\n','\n','\n\n','\n','\n','\n')[row]
   return out
 
+# Parse a printed board
 def parseboard(str):
   result = []
   for w in str.split():
