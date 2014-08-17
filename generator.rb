@@ -188,48 +188,47 @@ class PuzzleSolver
         end
       end
 
-      # if !stuck
-      #   allowed = board.allowed_numbers
-      #   needed = board.needed_numbers
-      # end
+      if !stuck
+        allowed = board.allowed_numbers
+      end
+      needed = board.needed_numbers
 
-      # # fill in any spots determined by elimination of other locations.
-      # # For any given column, find which numbers it is missing,
-      # # And figure out which positions allow those numbers - if only
-      # # one position allows it, the number goes there.
-      # #
-      # # If more than one spot is available, add to the guesses.
-      # board.coordinate_systems.each do |axis|
-      #   (0..8).each do |x|
-      #     numbers = bits_to_numbers(needed_index(x, axis))
-      #     numbers.each do |n|
-      #       bit = 1 << n
-      #       # spots =for this number & col, all positions that allow the needed
-      #       # numbers
-      #       spots = []
+      # fill in any spots determined by elimination of other locations.
+      # For any given column, find which numbers it is missing,
+      # And figure out which positions allow those numbers - if only
+      # one position allows it, the number goes there.
+      #
+      # If more than one spot is available, add to the guesses.
+      board.coordinate_systems.each do |axis|
+        (0..8).each do |x|
+          numbers = bits_to_numbers(needed[needed_index(x, axis)])
+          numbers.each do |n|
+            bit = 1 << n
+            # spots =for this number & col, all positions that allow the needed
+            # numbers
+            spots = []
 
-      #       (0..8).each do |y|
-      #         index = board.index_for(x, y, axis)
-      #         # if this position allows the needed number, add it to spots
-      #         if allowed[index] & bit
-      #           spots << index
-      #         end
-      #       end
+            (0..8).each do |y|
+              index = board.index_for(x, y, axis)
+              # if this position allows the needed number, add it to spots
+              if allowed[index] & bit
+                spots << index
+              end
+            end
 
-      #       if spots.length == 0
-      #         return []
-      #       elsif spots.length == 1
-      #         board.board[spots[0]] = n
-      #         stuck = False
-      #       elsif stuck
-      #         new_guesses = spots.map { |index| [index, n] }
-      #         guess, count = pickbetter(guess, count, new_guesses)
-      #       end
-      #     end
-      #   end
-      # end
-
-
+            if spots.length == 0
+              return []
+            elsif spots.length == 1
+              board.board[spots[0]] = n
+              stuck = False
+              break
+            elsif stuck
+              new_guesses = spots.map { |index| [index, n] }
+              guess, count = pickbetter(guess, count, new_guesses)
+            end
+          end
+        end
+      end
 
       if stuck
         guess.shuffle! unless guess.nil?
