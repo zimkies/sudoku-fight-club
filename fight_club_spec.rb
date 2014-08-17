@@ -2,31 +2,6 @@ require 'minitest/spec'
 require 'minitest/autorun'
 require './generator'
 
-# describe PuzzleGenerator do
-#   let(:puzzle_generator) { BoardGenerator.new }
-
-#   describe "#generate_solution" do
-#     let(:board) { puzzle_generator.generate_solution }
-
-#     it "creates a board" do
-#       board.must_be_kind_of Board
-#     end
-
-#     it "creates a valid board" do
-#       board.valid?.must_equal true
-#     end
-#   end
-
-#  describe "#generate_puzzle" do
-#     let(:board) { BoardGenerator.new.generate_puzzle }
-
-#     it "creates a new board" do
-#       pending
-#       board.must_be_kind_of Board
-#     end
-#   end
-# end
-
 describe PuzzleSolver do
 
   let(:solver) { PuzzleSolver.new(board) }
@@ -42,8 +17,6 @@ describe PuzzleSolver do
 
       it "should return a solved board" do
         subject.solved?.must_equal true
-        p subject
-        p subject.needed_numbers
       end
     end
   end
@@ -59,7 +32,6 @@ describe PuzzleSolver do
     end
   end
 end
-
 
 describe Board do
   let(:board) { Board.from_number number }
@@ -111,15 +83,41 @@ describe Board do
   end
 
   describe "#solved?" do
+    subject { board.solved? }
     it "returns true" do
       board.solved?.must_equal true
     end
 
     describe 'with number conflict' do
       let(:number) { '234856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+
       it 'returns false' do
         board.solved?.must_equal false
       end
+    end
+
+    describe "with a duplication" do
+      let(:number) { "375016432026458701184723856648302517702541683531687240860174325453260178217835064" }
+
+      it 'returns false' do
+        board.solved?.must_equal false
+      end
+    end
+  end
+
+  describe "#duplicate" do
+    subject { board.duplicate }
+
+    it "returns a board" do
+      subject.duplicate.must_be_instance_of Board
+    end
+
+    it "copies the board" do
+      subject.duplicate.board.must_equal board.board
+    end
+
+    it "doesn't keep the same board object" do
+      subject.duplicate.board.wont_be_same_as board.board
     end
   end
 end

@@ -4,8 +4,33 @@ class Board
     @board = [nil] * 81
   end
 
+  def duplicate
+    new_board = self.class.new
+    board.each_with_index do |n, i|
+      new_board.board[i] = n
+    end
+    new_board
+  end
+
   def to_number
-    @board.map{ |s| s.to_s || '-' }.join
+    @board.map{ |s| s.nil? ? '-' : s.to_s }.join
+  end
+
+  def print
+    out = ""
+    (0..8).each do |row|
+      (0..8).each do |col|
+        out += [""," "," ","  "," "," ","  "," "," "][col]
+        out += print_number lookup(row, col)
+      end
+      out += ["\n","\n","\n\n","\n","\n","\n\n","\n","\n","\n"][row]
+    end
+    puts out
+  end
+
+  # The printed version of our heroku number
+  def print_number(number)
+    number.nil? ? "_" : (number + 1).to_s
   end
 
   def self.from_number(number)
@@ -125,27 +150,13 @@ class PuzzleSolver
   end
 
   def solve
-    board = @starting_board.clone
+    board = @starting_board.duplicate
     guesses = deduce(board)
-    p guesses
 
-    return [[], board][1] if guesses
+    return [[], board][1] unless guesses
 
     solve_next([[guesses, 0, board]])[1]
   end
-
-  # TODO rename
-  def needed_index(index, coordinate_system)
-    case coordinate_system
-    when :row_col
-      index
-    when :col_row
-      9 + index
-    when :box
-      18 + index
-    end
-  end
-
 
   # deduce(board):
   # Take a board and solve it as far as can be deduced without guessing.
@@ -161,7 +172,6 @@ class PuzzleSolver
       stuck, guess, count = true, nil, 0
       # fill in any spots determined by direct conflicts
       allowed = board.allowed_numbers
-      needed = board.needed_numbers
       (0..80).each do |index|
         if board.board[index].nil?
           numbers = bits_to_numbers(allowed[index])
@@ -170,59 +180,56 @@ class PuzzleSolver
           elsif numbers.size == 1
             board.board[index] = numbers[0]
             stuck = false
+            break
           elsif stuck
-              new_guesses = numbers.map { |n| [index, n] }
+            new_guesses = numbers.map { |n| [index, n] }
             guess, count = pickbetter(guess, count, new_guesses)
-            # p "simple guess #{guess}, #{count}"
           end
         end
       end
 
-      if !stuck
-        allowed = board.allowed_numbers
-        needed = board.needed_numbers
-      end
+      # if !stuck
+      #   allowed = board.allowed_numbers
+      #   needed = board.needed_numbers
+      # end
 
-      # fill in any spots determined by elimination of other locations.
-      # For any given column, find which numbers it is missing,
-      # And figure out which positions allow those numbers - if only
-      # one position allows it, the number goes there.
-      #
-      # If more than one spot is available, add to the guesses.
-      board.coordinate_systems.each do |axis|
-        (0..8).each do |x|
-          numbers = bits_to_numbers(needed_index(x, axis))
-          numbers.each do |n|
-            bit = 1 << n
-            # spots =for this number & col, all positions that allow the needed
-            # numbers
-            spots = []
+      # # fill in any spots determined by elimination of other locations.
+      # # For any given column, find which numbers it is missing,
+      # # And figure out which positions allow those numbers - if only
+      # # one position allows it, the number goes there.
+      # #
+      # # If more than one spot is available, add to the guesses.
+      # board.coordinate_systems.each do |axis|
+      #   (0..8).each do |x|
+      #     numbers = bits_to_numbers(needed_index(x, axis))
+      #     numbers.each do |n|
+      #       bit = 1 << n
+      #       # spots =for this number & col, all positions that allow the needed
+      #       # numbers
+      #       spots = []
 
-            (0..8).each do |y|
-              index = board.index_for(x, y, axis)
-              # if this position allows the needed number, add it to spots
-              if allowed[index] & bit
-                spots << index
-              end
-            end
+      #       (0..8).each do |y|
+      #         index = board.index_for(x, y, axis)
+      #         # if this position allows the needed number, add it to spots
+      #         if allowed[index] & bit
+      #           spots << index
+      #         end
+      #       end
 
-            if spots.length == 0
-              return []
-            elsif spots.length == 1
-              board.board[spots[0]] = n
-              stuck = False
-            elsif stuck
-              new_guesses = spots.map { |index| [index, n] }
-              guess, count = pickbetter(guess, count, new_guesses)
-              # p "comlex guess #{guess}, #{count}"
-            end
-          end
-        end
-      end
+      #       if spots.length == 0
+      #         return []
+      #       elsif spots.length == 1
+      #         board.board[spots[0]] = n
+      #         stuck = False
+      #       elsif stuck
+      #         new_guesses = spots.map { |index| [index, n] }
+      #         guess, count = pickbetter(guess, count, new_guesses)
+      #       end
+      #     end
+      #   end
+      # end
 
 
-      p "stuck #{stuck}"
-      p "guess #{guess}"
 
       if stuck
         guess.shuffle! unless guess.nil?
@@ -246,17 +253,19 @@ class PuzzleSolver
   # Otherwise, try the current guess, deduce it (return if won),
   # and append each of it's guesses to the stack.
   def solve_next(stack)
-    while stack.size > 0
+    while stack.length > 0
       guesses, guesses_index, board = stack.pop
       # skip if all possible guesses at this level are done
       next if guesses_index >= guesses.size
-      stack << [guesses, index + 1, board.clone]
-      board = board.clone
-      guess = guesses[index]
-      board[guess[0]] =  guess[1]
+      stack << [guesses, guesses_index + 1, board]
+      board = board.duplicate
+      guess = guesses[guesses_index]
+      # p "assigning #{guess}"
+      board.board[guess[0]] =  guess[1]
       guesses = deduce(board)
+      p "board #{board.to_number}"
       return [stack, board] if guesses.nil?
-      stack << [guesses, 0, board.clone]
+      stack << [guesses, 0, board]
     end
     [[], Nil]
   end
@@ -278,6 +287,18 @@ class PuzzleSolver
       [t, c + 1]
     else
       [b, c + 1]
+    end
+  end
+
+  # TODO rename
+  def needed_index(index, coordinate_system)
+    case coordinate_system
+    when :row_col
+      index
+    when :col_row
+      9 + index
+    when :box
+      18 + index
     end
   end
 end
