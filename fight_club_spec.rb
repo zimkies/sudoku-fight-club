@@ -67,13 +67,13 @@ describe Board do
 
   describe '#lookup' do
     it 'works for row_col' do
-      board.lookup(1, 0, :row_col).must_equal "7"
+      board.lookup(1, 0, :row_col).must_equal 7
     end
     it 'works for col_row' do
-      board.lookup(0, 1, :col_row).must_equal "7"
+      board.lookup(0, 1, :col_row).must_equal 7
     end
     it 'works for box' do
-      board.lookup(0, 3, :box).must_equal "7"
+      board.lookup(0, 3, :box).must_equal 7
     end
   end
 
@@ -98,6 +98,28 @@ describe Board do
     it "returns all 511s" do
       board.needed_numbers.must_equal [511]*27
     end
+  end
 
+  describe "#axis_missing" do
+    let(:number) { '---856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+    subject { board.axis_missing(0, :row_col) }
+
+    it "misses 1,3,4" do
+      subject.must_equal 26
+    end
+
+  end
+
+  describe "#solved?" do
+    it "returns true" do
+      board.solved?.must_equal true
+    end
+
+    describe 'with number conflict' do
+      let(:number) { '234856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+      it 'returns false' do
+        board.solved?.must_equal false
+      end
+    end
   end
 end

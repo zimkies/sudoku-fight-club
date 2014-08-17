@@ -11,7 +11,7 @@ class Board
   def self.from_number(number)
     raise 'Number must be of length 81' unless number.size == 81
     new_board = new
-    number.split('').each_with_index { |n, i| new_board.board[i] = n if n != '-' }
+    number.split('').each_with_index { |n, i| new_board.board[i] = n.to_i if n != '-' }
     new_board
   end
 
@@ -79,7 +79,7 @@ class Board
     bits = 0
     (0..8).each do |y|
       e = lookup(x, y, coordinate_system)
-      bits |= 1 << e if e
+      bits |= 1 << e unless e.nil?
     end
     511 ^ bits
   end
@@ -173,7 +173,7 @@ class PuzzleSolver
           elsif stuck
               new_guesses = numbers.map { |n| [index, n] }
             guess, count = pickbetter(guess, count, new_guesses)
-            p "simple guess #{guess}, #{count}"
+            # p "simple guess #{guess}, #{count}"
           end
         end
       end
@@ -214,7 +214,7 @@ class PuzzleSolver
             elsif stuck
               new_guesses = spots.map { |index| [index, n] }
               guess, count = pickbetter(guess, count, new_guesses)
-              p "comlex guess #{guess}, #{count}"
+              # p "comlex guess #{guess}, #{count}"
             end
           end
         end
