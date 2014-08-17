@@ -1,7 +1,19 @@
+#
+# Represents a 9x9 Sudoku Board
+#
+#
 class Board
   attr_accessor :board
+
   def initialize
     @board = [nil] * 81
+  end
+
+  def self.from_number(number)
+    raise 'Number must be of length 81' unless number.size == 81
+    new_board = new
+    number.split('').each_with_index { |n, i| new_board.board[i] = n.to_i if n != '-' }
+    new_board
   end
 
   def duplicate
@@ -28,16 +40,9 @@ class Board
     puts out
   end
 
-  # The printed version of our heroku number
-  def print_number(number)
-    number.nil? ? "_" : (number + 1).to_s
-  end
-
-  def self.from_number(number)
-    raise 'Number must be of length 81' unless number.size == 81
-    new_board = new
-    number.split('').each_with_index { |n, i| new_board.board[i] = n.to_i if n != '-' }
-    new_board
+  # 3 different co-ordinate systems for lookups
+  def coordinate_systems
+    [:row_col, :col_row, :box]
   end
 
   # Looks up the value at (x,y) on the relevant coordinate_system
@@ -63,28 +68,6 @@ class Board
     end
   end
 
-  # what is first co-ordinate of position in this axis
-  def first_axis_index(index, coordinate_system=:row_col)
-    case coordinate_system
-    when :row_col
-      (index / 9)
-    when :col_row
-      index % 9
-    when :box
-      (index / 27) * 3 + (index / 3) % 3
-    end
-  end
-
-  def coordinate_systems
-    [:row_col, :col_row, :box]
-  end
-
-  # Return the list of numbers that a bitmask represents
-  # eg bits_to_numbers(511) -> [0, 1, ... 8]
-  def bits_to_numbers(bits)
-    (0..8).select { |n| (bits & (1 << n)) == 1 }
-  end
-
   # All allowed numbers for that position given the other numbers
   # along it's axes.
   # Returned as a bitmask (number)
@@ -96,6 +79,20 @@ class Board
       bits &= axis_missing(axis_index, c)
     end
     bits
+  end
+
+  # Takes a board and returns in bitmask format:
+  #   needed: A list of missing numbers for each row/axis combination
+  #   eg [123, 511, 234, 1 ...] columns, then rows, then boxes. (Should be 27)
+  def needed_numbers
+    needed = []
+    coordinate_systems.each do |c|
+      (0..8).each do |x|
+        bits = axis_missing(x, c)
+        needed << bits
+      end
+    end
+    needed
   end
 
   # bitmask of which numbers are accounted for in this row
@@ -131,21 +128,28 @@ class Board
     board.all? { |n| n.nil? }
   end
 
-  # Takes a board and returns in bitmask format:
-  #   needed: A list of missing numbers for each row/axis combination
-  #   eg [123, 511, 234, 1 ...] columns, then rows, then boxes. (Should be 27)
-  def needed_numbers
-    needed = []
-    coordinate_systems.each do |c|
-      (0..8).each do |x|
-        bits = axis_missing(x, c)
-        needed << bits
-      end
+  # The printed version of our heroku number
+  def print_number(number)
+    number.nil? ? "_" : (number + 1).to_s
+  end
+
+  # what is first co-ordinate of position in this axis
+  def first_axis_index(index, coordinate_system=:row_col)
+    case coordinate_system
+    when :row_col
+      (index / 9)
+    when :col_row
+      index % 9
+    when :box
+      (index / 27) * 3 + (index / 3) % 3
     end
-    needed
   end
 end
 
+#
+# Responsible for solving the puzzle as far as it can
+# can be logically deduced without guessing
+#
 class PuzzleDeducer
 
   attr_accessor :board
@@ -154,11 +158,9 @@ class PuzzleDeducer
     @board = board
   end
 
-  # deduce(board):
-  # Take a board and solve it as far as can be deduced without guessing.
   # Returns:
   #   a best guess for the next spot to try,
-  #   or None if it is solved
+  #   or nil if it is solved
   #   or [] if it is in an invalid state (no legal moves)
   #
   # Deduction is done first by looking for direct conflicts at every spot
@@ -197,7 +199,7 @@ class PuzzleDeducer
       # If more than one spot is available, add to the guesses.
       board.coordinate_systems.each do |axis|
         (0..8).each do |x|
-          numbers = bits_to_numbers(needed[needed_index(x, axis)])
+          numbers = bits_to_numbers(needed[axis_index(x, axis)])
           numbers.each do |n|
             bit = 1 << n
             # spots =for this number & col, all positions that allow the needed
@@ -233,8 +235,8 @@ class PuzzleDeducer
     end
   end
 
-  # TODO rename
-  def needed_index(index, coordinate_system)
+  #  lookup an axis based on it's 0-9 index and coordinate system.
+  def axis_index(index, coordinate_system)
     case coordinate_system
     when :row_col
       index
@@ -270,8 +272,6 @@ class PuzzleDeducer
       [b, c + 1]
     end
   end
-
-
 end
 
 class PuzzleSolver

@@ -1,6 +1,6 @@
 require 'minitest/spec'
 require 'minitest/autorun'
-require './generator'
+require './fight_club'
 
 describe PuzzleGenerator do
   let(:puzzle_generator) { PuzzleGenerator.new }
