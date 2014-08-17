@@ -42,7 +42,6 @@ describe PuzzleDeducer do
   end
 end
 
-
 describe PuzzleSolver do
 
   let(:solver) { PuzzleSolver.new(board) }
