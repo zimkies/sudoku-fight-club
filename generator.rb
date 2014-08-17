@@ -51,13 +51,13 @@ class Board
   end
 
   def coordinate_systems
-    %w(row_col col_row box)
+    [:row_col, :col_row, :box]
   end
 
   # Return the list of numbers that a bitmask represents
   # eg bits_to_numbers(511) -> [0, 1, ... 8]
   def bits_to_numbers(bits)
-    (0..8).select { (bits & (1 << y)) == 1 }
+    (0..8).select { |n| (bits & (1 << n)) == 1 }
   end
 
   # All allowed numbers for that position given the other numbers
@@ -88,15 +88,18 @@ class Board
   #   allowed: A list of all directly allowed numbers for each position
   #     eg [123, 231, 231 ...] 81 of them in linear order.
   def allowed_numbers
-    allowed = @board.map { |n| e.nil? ? 511 : 0 }
+    allowed = @board.map { |n| n.nil? ? 511 : 0 }
     coordinate_systems.each do |c|
       (0..8).each do |x|
         bits = axis_missing(x, c)
-        needed << bits
-        (0..8).each { |y| allowed[index_for(x, y, axis)] &= bits }
+        (0..8).each { |y| allowed[index_for(x, y, c)] &= bits }
       end
     end
     allowed
+  end
+
+  def solved?
+    needed_numbers.all? { |bits| bits == 0 }
   end
 
   # Takes a board and returns in bitmask format:
@@ -105,13 +108,16 @@ class Board
   def needed_numbers
     needed = []
     coordinate_systems.each do |c|
-      (0..8).each { |x| needed << bits }
+      (0..8).each do |x|
+        bits = axis_missing(x, c)
+        needed << bits
+      end
     end
     needed
   end
 end
 
-class BoardSolver
+class PuzzleSolver
 
   def initialize(board)
     @starting_board = board
@@ -121,9 +127,25 @@ class BoardSolver
   def solve
     board = @starting_board.clone
     guesses = deduce(board)
-    return [[], board] if guesses
-    solve_next([[guesses, 0, board]])
+    p guesses
+
+    return [[], board][1] if guesses
+
+    solve_next([[guesses, 0, board]])[1]
   end
+
+  # TODO rename
+  def needed_index(index, coordinate_system)
+    case coordinate_system
+    when :row_col
+      index
+    when :col_row
+      9 + index
+    when :box
+      18 + index
+    end
+  end
+
 
   # deduce(board):
   # Take a board and solve it as far as can be deduced without guessing.
@@ -141,16 +163,18 @@ class BoardSolver
       allowed = board.allowed_numbers
       needed = board.needed_numbers
       (0..80).each do |index|
-        next unless board.board[index]
-        numbers = bits_to_numbers(allowed[index])
-        if numbers.size == 0
-          return [] # Return nothing if no possibilitie E
-        elsif numbers.size == 1
-          board.board[pos] = numbers[0]
-          stuck = False
-        elsif stuck
-          new_guesses = numbers.map { |n| [index, n] }
-          guess, count = pickbetter(guess, count, new_guesses)
+        if board.board[index].nil?
+          numbers = bits_to_numbers(allowed[index])
+          if numbers.size == 0
+            return [] # Return nothing if no possibilitie E
+          elsif numbers.size == 1
+            board.board[index] = numbers[0]
+            stuck = false
+          elsif stuck
+              new_guesses = numbers.map { |n| [index, n] }
+            guess, count = pickbetter(guess, count, new_guesses)
+            p "simple guess #{guess}, #{count}"
+          end
         end
       end
 
@@ -167,7 +191,7 @@ class BoardSolver
       # If more than one spot is available, add to the guesses.
       board.coordinate_systems.each do |axis|
         (0..8).each do |x|
-          numbers = bits_to_numbers(needed[axis * 9 + x])
+          numbers = bits_to_numbers(needed_index(x, axis))
           numbers.each do |n|
             bit = 1 << n
             # spots =for this number & col, all positions that allow the needed
@@ -175,9 +199,9 @@ class BoardSolver
             spots = []
 
             (0..8).each do |y|
-              index = board.posfor(x, y, axis)
+              index = board.index_for(x, y, axis)
               # if this position allows the needed number, add it to spots
-              if allowed[pos] & bit
+              if allowed[index] & bit
                 spots << index
               end
             end
@@ -188,15 +212,20 @@ class BoardSolver
               board.board[spots[0]] = n
               stuck = False
             elsif stuck
-              new_guesses = spots.map { |n| [index, n] }
+              new_guesses = spots.map { |index| [index, n] }
               guess, count = pickbetter(guess, count, new_guesses)
+              p "comlex guess #{guess}, #{count}"
             end
           end
         end
       end
 
+
+      p "stuck #{stuck}"
+      p "guess #{guess}"
+
       if stuck
-        random.shuffle(guess) unless guess.nil?
+        guess.shuffle! unless guess.nil?
         return guess
       end
     end
@@ -205,7 +234,7 @@ class BoardSolver
  # Return the list of numbers that a bitmask represents
   # eg bits_to_numbers(511) -> [0, 1, ... 8]
   def bits_to_numbers(bits)
-    (0..8).select { (bits & (1 << y)) == 1 }
+    (0..8).select { |n| (bits & (1 << n)) != 0 }
   end
 
   # takes a stack of tuples [(guesses, guesses_index, board)]
@@ -241,11 +270,11 @@ class BoardSolver
   # If we have no guess, just return the list of t with count 1
   # If we
   def pickbetter(b, c, t)
-    if b.nil? || t.length < b.length
+    if b.nil? || (t.length < b.length)
       [t, 1]
     elsif t.length > b.length
       [b, c]
-    elsif rand(c+1) == 0
+    elsif rand(c + 1) == 0
       [t, c + 1]
     else
       [b, c + 1]
