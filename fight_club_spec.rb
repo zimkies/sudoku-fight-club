@@ -2,6 +2,47 @@ require 'minitest/spec'
 require 'minitest/autorun'
 require './generator'
 
+describe PuzzleGenerator do
+  let(:puzzle_generator) { PuzzleGenerator.new }
+
+  describe "#generate_puzzle" do
+    subject { puzzle_generator.generate_puzzle }
+
+    it "creates a new board" do
+      subject.must_be_kind_of Board
+    end
+
+    it "creates a non-solve board" do
+      subject.solved?.must_equal false
+    end
+
+    it "creates a non-blank board" do
+      subject.blank?.must_equal false
+    end
+
+    it "printer" do
+      puts subject.print
+    end
+  end
+end
+
+describe PuzzleDeducer do
+  let(:deducer) { PuzzleDeducer.new(board) }
+  let(:board) { Board.new }
+
+  describe "#bits_to_numbers" do
+    subject { deducer.bits_to_numbers(number) }
+
+    describe "with 511" do
+      let(:number) { 511 }
+      it "converts correctly" do
+        subject.must_equal [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      end
+    end
+  end
+end
+
+
 describe PuzzleSolver do
 
   let(:solver) { PuzzleSolver.new(board) }
@@ -17,17 +58,6 @@ describe PuzzleSolver do
 
       it "should return a solved board" do
         subject.solved?.must_equal true
-      end
-    end
-  end
-
-  describe "#bits_to_numbers" do
-    subject { PuzzleSolver.new(Board.new).bits_to_numbers(number) }
-
-    describe "with 511" do
-      let(:number) { 511 }
-      it "converts correctly" do
-        subject.must_equal [0, 1, 2, 3, 4, 5, 6, 7, 8]
       end
     end
   end

@@ -127,6 +127,10 @@ class Board
     needed_numbers.all? { |bits| bits == 0 }
   end
 
+  def blank?
+    board.all? { |n| n.nil? }
+  end
+
   # Takes a board and returns in bitmask format:
   #   needed: A list of missing numbers for each row/axis combination
   #   eg [123, 511, 234, 1 ...] columns, then rows, then boxes. (Should be 27)
@@ -142,20 +146,12 @@ class Board
   end
 end
 
-class PuzzleSolver
+class PuzzleDeducer
+
+  attr_accessor :board
 
   def initialize(board)
-    @starting_board = board
-    @guess_stack = []
-  end
-
-  def solve
-    board = @starting_board.duplicate
-    guesses = deduce(board)
-
-    return [[], board][1] unless guesses
-
-    solve_next([[guesses, 0, board]])[1]
+    @board = board
   end
 
   # deduce(board):
@@ -167,7 +163,7 @@ class PuzzleSolver
   #
   # Deduction is done first by looking for direct conflicts at every spot
   # And then by eliminating other locations along a column.
-  def deduce(board)
+  def deduce
     while true
       stuck, guess, count = true, nil, 0
       # fill in any spots determined by direct conflicts
@@ -237,36 +233,22 @@ class PuzzleSolver
     end
   end
 
- # Return the list of numbers that a bitmask represents
+  # TODO rename
+  def needed_index(index, coordinate_system)
+    case coordinate_system
+    when :row_col
+      index
+    when :col_row
+      9 + index
+    when :box
+      18 + index
+    end
+  end
+
+   # Return the list of numbers that a bitmask represents
   # eg bits_to_numbers(511) -> [0, 1, ... 8]
   def bits_to_numbers(bits)
     (0..8).select { |n| (bits & (1 << n)) != 0 }
-  end
-
-  # takes a stack of tuples [(guesses, guesses_index, board)]
-  # returns [stack, solution]
-  #
-  # Uses DFS - keeps appending guesses to the stack. If there are
-  # If we have gone through all guesses, ignore this board state
-  # Otherwise put the next guess on the stack
-  # Otherwise, try the current guess, deduce it (return if won),
-  # and append each of it's guesses to the stack.
-  def solve_next(stack)
-    while stack.length > 0
-      guesses, guesses_index, board = stack.pop
-      # skip if all possible guesses at this level are done
-      next if guesses_index >= guesses.size
-      stack << [guesses, guesses_index + 1, board]
-      board = board.duplicate
-      guess = guesses[guesses_index]
-      # p "assigning #{guess}"
-      board.board[guess[0]] =  guess[1]
-      guesses = deduce(board)
-      p "board #{board.to_number}"
-      return [stack, board] if guesses.nil?
-      stack << [guesses, 0, board]
-    end
-    [[], Nil]
   end
 
   # b is guess
@@ -289,27 +271,125 @@ class PuzzleSolver
     end
   end
 
-  # TODO rename
-  def needed_index(index, coordinate_system)
-    case coordinate_system
-    when :row_col
-      index
-    when :col_row
-      9 + index
-    when :box
-      18 + index
-    end
+
+end
+
+class PuzzleSolver
+  attr_accessor :stack
+
+  def initialize(board, stack=[])
+    @starting_board = board
+    @stack = stack
   end
+
+  def solve
+    board = @starting_board.duplicate
+    guesses = PuzzleDeducer.new(board).deduce
+
+    return board unless guesses
+
+    @stack << [guesses, 0, board]
+    solve_next[1]
+  end
+
+  # takes a stack of tuples [(guesses, guesses_index, board)]
+  # returns [stack, solution]
+  #
+  # Uses DFS - keeps appending guesses to the stack. If there are
+  # If we have gone through all guesses, ignore this board state
+  # Otherwise put the next guess on the stack
+  # Otherwise, try the current guess, deduce it (return if won),
+  # and append each of it's guesses to the stack.
+  def solve_next
+    while stack.length > 0
+      guesses, guesses_index, board = stack.pop
+      # skip if all possible guesses at this level are done
+      next if guesses_index >= guesses.size
+      stack << [guesses, guesses_index + 1, board]
+      board = board.duplicate
+      guess = guesses[guesses_index]
+      board.board[guess[0]] =  guess[1]
+      guesses =  PuzzleDeducer.new(board).deduce
+      return [stack, board] if guesses.nil?
+      stack << [guesses, 0, board]
+    end
+    [[], nil]
+  end
+
 end
 
 class PuzzleGenerator
 
   def generate_puzzle
     solution = generate_solution
+    solution.print
+    puzzle = []
+    deduced = Board.new
+
+    (0..80).to_a.shuffle.each do |index|
+      if deduced.board[index].nil?
+        puzzle << [index, solution.board[index]]
+        deduced.board[index] = solution.board[index]
+        PuzzleDeducer.new(deduced).deduce
+      end
+    end
+
+    puzzle.shuffle!
+
+    puzzle.reverse.each_with_index do |hint, i|
+      puzzle.delete_at i
+      rating = check_puzzle(board_from_entries(puzzle), solution)
+      puzzle << hint if rating == -1
+    end
+
+    sudoku = board_from_entries puzzle
+    sudoku.print
+    sudoku
   end
 
   private
 
-  def generate_solution
+  def board_from_entries(entries)
+    board = Board.new
+    entries.each do |entry|
+      index, n = entry
+      board.board[index] = n
+    end
+    board
+  end
+
+  def generate_solution(seed_board=nil)
+    PuzzleSolver.new(seed_board || Board.new).solve
+  end
+
+  # Returns the difficulty rating of a puzzle or -1 if it is not valid.
+  # Takes an option 'board' parameter which is the puzzle's solution.
+  #
+  # If you pass in a solution, it checks that our solver gives that solution.
+  # It also makes sure that there are no alternative solutions by solving
+  # from the remaining state.
+  def check_puzzle(puzzle, board=Nil)
+    solver = PuzzleSolver.new(puzzle)
+    answer = solver.solve
+    stack = solver.stack
+
+    if answer.nil?
+      return -1
+    end
+    if !board.nil? && !board_matches(board, answer)
+      return -1
+    end
+    difficulty = stack.length
+    state, second = PuzzleSolver.new(board, stack).solve_next # TODO CLEANUP
+    if !second.nil?
+      return -1
+    end
+
+    difficulty
+  end
+
+  # Tests equivalence of 2 boards.
+  def board_matches(b1, b2)
+    b1.board == b2.board
   end
 end
