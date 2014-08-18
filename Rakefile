@@ -53,4 +53,39 @@ namespace :puzzle do
   end
 end
 
+namespace :solution do
+  task :length, [:team_name] do |t,args|
+    args.with_defaults(team_name: 'fake_team')
+    files = []
+    file_path = File.dirname(__FILE__) + "/contestants/#{args.team_name}.rb"
+    folder_path = File.dirname(__FILE__) + "/contestants/#{args.team_name}"
+    if File.file?(file_path)
+      files << File.open(file_path)
+    end
+
+    if File.directory?(folder_path)
+      Dir.foreach(folder_path) do |item|
+        next if item == '.' or item == '..'
+        files << File.open(File.join(folder_path, item))
+      end
+    end
+
+    if files.empty?
+      raise "Could not find an entry for team name: #{args.team_name}"
+    end
+
+    char_count = 0
+    files.each do |file|
+      solution = file.read
+      solution.gsub(/\s/,"")
+      char_count += solution.length
+    end
+
+    puts "-----------------------------------------------"
+    puts "| Congratulations, we've read your solution    "
+    puts "| Total characters: #{char_count}              "
+    puts "-----------------------------------------------"
+  end
+end
+
 task default: 'puzzle:generate'

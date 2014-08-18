@@ -1,3 +1,4 @@
+require_relative 'board'
 #
 # Represents a 9x9 Sudoku Board
 #
@@ -54,7 +55,7 @@ class Board
     @board.map{ |s| s.nil? ? '-' : s.to_s }.join
   end
 
-  def print(handle)
+  def print(handle=$stdout)
     handle.puts to_s
   end
 

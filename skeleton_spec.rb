@@ -1,10 +1,10 @@
-require 'minitest/spec'
 require 'minitest/autorun'
-require './contestants/ben'
+require 'minitest/spec'
+require './contestants/skeleton'
 
-describe BenSolver do
+describe SkeletonSolver do
 
-  let(:solver) { BenSolver.new(number) }
+  let(:solver) { SkeletonSolver.new(number) }
 
   describe "#solve" do
     subject { solver.solve }
