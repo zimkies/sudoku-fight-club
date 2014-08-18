@@ -21,8 +21,9 @@ class Board
     x_ind = 0
     y_ind = 0
     file.each_line do |line|
+      next if line.strip == ''
       line.strip.split(' ').each_with_index do |n, i|
-        new_board.board[y_ind * 9 + i] = n.to_i if n != '_'
+        new_board.board[y_ind * 9 + i] = (n.to_i - 1) if n != '_'
       end
       y_ind += 1
     end
