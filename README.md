@@ -8,7 +8,7 @@ A project for finding the fastest and shortest ruby programs to solve sudoku puz
 - Come up with the fastest or shortest solution you can and submit a pull request
 - The length of a program is the sum of all it's non whitespace characters.
 - The speed of the program is measured by taking the average speed for 100 randomly generated puzzles.
-- You cannot implement a solution that simply caches the solution.
+- You cannot implement a solution that simply returns a cached version of the solution.
 - Profit
 
 ### Interface
