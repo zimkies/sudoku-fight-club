@@ -1,6 +1,5 @@
 require './fight_club'
 require 'benchmark'
-require 'pry'
 
 namespace :puzzle do
   desc "Generate a puzzle"
