@@ -8,27 +8,23 @@ describe PuzzleGenerator do
   describe "#generate_puzzle" do
     subject { puzzle_generator.generate_puzzle }
 
-    it "creates a new board" do
-      subject.must_be_kind_of Board
+    it "creates a board" do
+      subject.must_be_kind_of DefaultBoard
     end
 
-    it "creates a non-solve board" do
+    it "creates a non-solved board" do
       subject.solved?.must_equal false
     end
 
     it "creates a non-blank board" do
       subject.blank?.must_equal false
     end
-
-    it "printer" do
-      puts subject.print
-    end
   end
 end
 
 describe PuzzleDeducer do
   let(:deducer) { PuzzleDeducer.new(board) }
-  let(:board) { Board.new }
+  let(:board) { DefaultBoard.new }
 
   describe "#bits_to_numbers" do
     subject { deducer.bits_to_numbers(number) }
@@ -49,10 +45,10 @@ describe PuzzleSolver do
   describe "#solve" do
     describe "with a blank board" do
       subject { solver.solve }
-      let(:board) { Board.new }
+      let(:board) { DefaultBoard.new }
 
       it "should return a board" do
-        subject.must_be_instance_of Board
+        subject.must_be_instance_of DefaultBoard
       end
 
       it "should return a solved board" do
@@ -62,8 +58,8 @@ describe PuzzleSolver do
   end
 end
 
-describe Board do
-  let(:board) { Board.from_number number }
+describe DefaultBoard do
+  let(:board) { DefaultBoard.from_number number }
   let(:number) { '134856072706312458528470631813205746240768315675134280067541823452083167381627504' }
 
   describe '#lookup' do
@@ -78,6 +74,33 @@ describe Board do
     end
   end
 
+  describe '#solved?' do
+
+    it 'works for a solved board' do
+      board.solved?.must_equal true
+    end
+
+    describe "fails for a board that is incomplete" do
+      let(:number) { '13-856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+      it 'fails' do
+        board.solved?.must_equal false
+      end
+    end
+
+    describe "fails for a board with a 9" do
+      let(:number) { '934856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+      it 'fails' do
+        board.solved?.must_equal false
+      end
+    end
+
+    describe "fails for a board which has conflicts" do
+      let(:number) { '334856072706312458528470631813205746240768315675134280067541823452083167381627504' }
+      it 'fails' do
+        board.solved?.must_equal false
+      end
+    end
+  end
 
   describe '#first_axis_index' do
     it 'works for row_col' do
@@ -94,7 +117,7 @@ describe Board do
   end
 
   describe "#needed_numbers" do
-    let(:board) { Board.new }
+    let(:board) { DefaultBoard.new }
 
     it "returns all 511s" do
       board.needed_numbers.must_equal [511]*27
@@ -138,7 +161,7 @@ describe Board do
     subject { board.duplicate }
 
     it "returns a board" do
-      subject.duplicate.must_be_instance_of Board
+      subject.duplicate.must_be_instance_of DefaultBoard
     end
 
     it "copies the board" do

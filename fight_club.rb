@@ -1,9 +1,9 @@
-require_relative 'board'
 #
-# Represents a 9x9 Sudoku Board
+# Represents a 9x9 Sudoku DefaultBoard
 #
 #
-class Board
+
+class DefaultBoard
   attr_accessor :board
 
   def initialize
@@ -29,6 +29,11 @@ class Board
       y_ind += 1
     end
     new_board
+  end
+
+  def solved?
+    valid? && (board.compact.length == 81) &&
+    board.all? { |n| n.to_i =~ /[0-8]/ }
   end
 
   def to_s
@@ -342,7 +347,7 @@ class PuzzleGenerator
   def generate_puzzle
     solution = generate_solution
     puzzle = []
-    deduced = Board.new
+    deduced = DefaultBoard.new
 
     (0..80).to_a.shuffle.each do |index|
       if deduced.board[index].nil?
@@ -367,7 +372,7 @@ class PuzzleGenerator
   private
 
   def board_from_entries(entries)
-    board = Board.new
+    board = DefaultBoard.new
     entries.each do |entry|
       index, n = entry
       board.board[index] = n
@@ -376,7 +381,7 @@ class PuzzleGenerator
   end
 
   def generate_solution(seed_board=nil)
-    PuzzleSolver.new(seed_board || Board.new).solve
+    PuzzleSolver.new(seed_board || DefaultBoard.new).solve
   end
 
   # Returns the difficulty rating of a puzzle or -1 if it is not valid.
