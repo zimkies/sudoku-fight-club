@@ -85,46 +85,6 @@ class Sudoku
     return sboard
   end
 
-  def by_common_possibles(sboard)
-    changed = false
-    empty_cells = get_empty_cells(sboard)
-    empty_cells.each do |empty_coord|
-      break if changed
-      all_coords = all_relevant_coordinates(empty_coord)
-      all_coords.each_with_index do |section, i|
-        section_coords = all_coords[i]
-        empty_section_coords = []
-        section_coords.each { |coord| empty_section_coords << coord if sboard[coord[0]][coord[1]] == 0 }
-        possibilities_counter = Hash.new
-        for num in 1..9 do 
-          possibilities_counter[num] = 0 
-        end
-        empty_section_coords.each do |coords|
-          possibilities = possible_numbers(coords, sboard)
-          possibilities.each do |num| 
-            possibilities_counter[num] += 1 
-          end
-        end
-        empty_section_coords.each do |coords|
-          if possibilities_counter.has_value?(1)
-            possibilities_counter.each do |number, occurances|
-              if occurances == 1
-                pos = possible_numbers(coords, sboard)
-                if pos.include?(number)
-                  sboard[coords[0]][coords[1]] = number
-                  changed = true
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-    sboard = by_elimination(sboard) if changed && !(all_cells_filled?(sboard))
-    sboard = guess(sboard) if !(changed) && !(all_cells_filled?(sboard))
-    return sboard
-  end
-
   def guess(sboard)
     cell = get_empty_cells(sboard).sample
     new_sboard = Marshal.load(Marshal.dump(sboard))
