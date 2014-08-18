@@ -30,6 +30,18 @@ class Board
     new_board
   end
 
+  def to_s
+    out = ""
+    (0..8).each do |row|
+      (0..8).each do |col|
+        out += [""," "," ","  "," "," ","  "," "," "][col]
+        out += print_number lookup(row, col)
+      end
+      out += ["\n","\n","\n\n","\n","\n","\n\n","\n","\n","\n"][row]
+    end
+    out
+  end
+
   def duplicate
     new_board = self.class.new
     board.each_with_index do |n, i|
@@ -43,15 +55,7 @@ class Board
   end
 
   def print(handle)
-    out = ""
-    (0..8).each do |row|
-      (0..8).each do |col|
-        out += [""," "," ","  "," "," ","  "," "," "][col]
-        out += print_number lookup(row, col)
-      end
-      out += ["\n","\n","\n\n","\n","\n","\n\n","\n","\n","\n"][row]
-    end
-    handle.puts out
+    handle.puts to_s
   end
 
   # 3 different co-ordinate systems for lookups
