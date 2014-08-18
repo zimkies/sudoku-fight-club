@@ -1,4 +1,4 @@
-class Sudoku
+class TES
   def initialize(board_string)
     @sudoku_board = []
     until board_string.length == 0
@@ -63,8 +63,10 @@ class Sudoku
     return possibilities
   end
 
-  def solve!
+  def solve
     @sudoku_board = by_elimination(@sudoku_board)
+    puts @sudoku_board.flatten.join
+    Board.new(@sudoku_board.flatten.map{|i| i - 1}.join)
   end
 
   def by_elimination(sboard)
@@ -136,4 +138,16 @@ class Sudoku
     return new_sboard if by_elimination(new_sboard) != -1
     return sboard
   end
+end
+
+class Board
+  def initialize(n)
+    @n = n
+  end
+
+  def self.from_file(file)
+    new(file.map{|l|l.strip.gsub('_','0').gsub(' ','')}.join(''))
+  end
+
+  def to_number;@n;end
 end
