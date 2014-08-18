@@ -16,6 +16,19 @@ class Board
     new_board
   end
 
+  def self.from_file(file)
+    new_board = new
+    x_ind = 0
+    y_ind = 0
+    file.each_line do |line|
+      line.strip.split(' ').each_with_index do |n, i|
+        new_board.board[y_ind * 9 + i] = n.to_i if n != '_'
+      end
+      y_ind += 1
+    end
+    new_board
+  end
+
   def duplicate
     new_board = self.class.new
     board.each_with_index do |n, i|
@@ -28,7 +41,7 @@ class Board
     @board.map{ |s| s.nil? ? '-' : s.to_s }.join
   end
 
-  def print
+  def print(handle)
     out = ""
     (0..8).each do |row|
       (0..8).each do |col|
@@ -37,7 +50,7 @@ class Board
       end
       out += ["\n","\n","\n\n","\n","\n","\n\n","\n","\n","\n"][row]
     end
-    puts out
+    handle.puts out
   end
 
   # 3 different co-ordinate systems for lookups
@@ -128,7 +141,7 @@ class Board
     board.all? { |n| n.nil? }
   end
 
-  # The printed version of our heroku number
+  # The printed version of our sudoku number
   def print_number(number)
     number.nil? ? "_" : (number + 1).to_s
   end
@@ -322,7 +335,6 @@ class PuzzleGenerator
 
   def generate_puzzle
     solution = generate_solution
-    solution.print
     puzzle = []
     deduced = Board.new
 
@@ -343,7 +355,6 @@ class PuzzleGenerator
     end
 
     sudoku = board_from_entries puzzle
-    sudoku.print
     sudoku
   end
 
