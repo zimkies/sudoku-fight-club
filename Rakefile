@@ -1,4 +1,6 @@
 require './fight_club'
+require 'benchmark'
+require 'pry'
 
 namespace :puzzle do
   desc "Generate a puzzle"
@@ -85,6 +87,46 @@ namespace :solution do
     puts "| Congratulations, we've read your solution    "
     puts "| Total characters: #{char_count}              "
     puts "-----------------------------------------------"
+  end
+
+  # Raises an error if a solution is not valid
+  task :verify, [:solution_class, :input] do |t,args|
+    args.with_defaults(input: 'puzzle.txt')
+    all_files = []
+
+    if File.directory?(args.input)
+      Dir.foreach(args.input) do |item|
+        next if item == '.' or item == '..'
+        all_files << File.open(File.join(args.input, item))
+      end
+    elsif File.file?(args.input)
+      all_files << File.open(args.input)
+    else
+      raise "Must enter a valid file, or puzzle.txt must exist"
+    end
+
+    # Load all the contestants
+    Dir["./contestants/*.rb"].each {|file| require file }
+
+    begin
+      SolutionClass = Kernel.const_get(args.solution_class)
+    rescue LoadError => e
+      raise "Couldn't load Solution Class. Is it defined in ./contestants/?", e
+    end
+
+    total_time = 0
+    all_files.each do |file|
+      board = Board.from_file(file)
+      solution = nil
+      measure = Benchmark.measure do
+        solution = SolutionClass.new(board.to_number).solve
+      end
+      total_time += measure.real
+      solved = DefaultBoard.from_number(solution.to_number).solved?
+      raise "Solution is not valid:\nPUZZLE: \n#{board.to_s}\nSOLUTION: \n#{solution.to_s}" if not solved
+    end
+    average_time = all_files.length == 0 ? 0 : total_time / all_files.length
+    puts "All #{all_files.count} test puzzles were correctly solved in an average of #{average_time} seconds"
   end
 end
 
