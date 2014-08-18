@@ -9,7 +9,7 @@ class SkeletonSolver
   # The digits 0-8 represent filled in sudoku digits
   # The character '-' represents a blank space
   #
-  # Example board:  "1--856-72---3124--52-470631-132-5--62--7-83156751342800675418234520-316738162-504"
+  # Example sudoku:  "1--856-72---3124--52-470631-132-5--62--7-83156751342800675418234520-316738162-504"
   def initialize(board)
   end
 

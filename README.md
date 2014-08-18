@@ -25,7 +25,7 @@ class MyTeamNameSolver
   # The digits 0-8 represent filled in sudoku digits
   # The character '-' represents a blank space
   #
-  # Example board:  "1--856-72---3124--52-470631-132-5--62--7-83156751342800675418234520-316738162-504"
+  # Example puzzle:  "1--856-72---3124--52-470631-132-5--62--7-83156751342800675418234520-316738162-504"
   def initialize(board)
   end
 
@@ -42,16 +42,16 @@ Test the length of your solution
 ```
 # Set a team name, checks for team_name.rb and team_name/ in
 # the contestants/ directory and sums the length
-rake solution:length[skeleton]
+rake solution:length[basic]
 ```
 
 Test the speed of your solution
 ```
 # Test your solution against puzzle.txt and print the time
-rake solution:verify[SkeletonSolver]
+rake solution:verify[BasicSolver]
 
 # Test your solution against all the provided puzzles and print the average time
-rake solution:verify[SkeletonSolver,puzzles]
+rake solution:verify[BasicSolver,puzzles]
 ```
 
 ### More rake tasks
