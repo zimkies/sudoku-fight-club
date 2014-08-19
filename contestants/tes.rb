@@ -7,55 +7,59 @@ class TES
   end
 
   def solved?
-    !self.board.include? 0
+    !board.include? 0
   end
 
   def empty_cells
-    self.board.map.with_index {|cell, i| cell == 0 ? i : nil}.select {|cell| cell }
+    board.map.with_index {|cell, i| cell == 0 ? i : nil}.select {|cell| cell }
   end
 
   def get_row index
     remainder = index % 9
     start = index - remainder
-    (start...start+9).to_a.map {|i| self.board[i]}
+    (start...start+9).to_a.map {|i| board[i]}
   end
 
   def get_column index
-    self.board.select.with_index {|cell, i| i%9 == index % 9}
+    board.select.with_index {|cell, i| i%9 == index % 9}
   end
 
   def get_square index
-    self.board.select.with_index {|cell, i| (i/27)*3 + (i/3)%3 == (index/27)*3 + (index/3)%3}
+    board.select.with_index {|cell, i| (i/27)*3 + (i/3)%3 == (index/27)*3 + (index/3)%3}
   end
 
   def possible_numbers index
-    (1..9).to_a - self.get_row(index) - self.get_column(index) - self.get_square(index)
+    (1..9).to_a - get_row(index) - get_column(index) - get_square(index)
   end
 
   def solve
-    self.by_elimination
-    self.guess unless self.solved?
-    self.board.join("")
+    by_elimination
+    guess unless solved? || !valid?
+    board.join("")
   end
 
   def by_elimination
-    self.empty_cells.each do |index|
-      pos = self.possible_numbers index
+    empty_cells.each do |index|
+      pos = possible_numbers index
+      if pos.length == 0
+        board[index] = -1
+        break
+      end
       if pos.length == 1
-        self.board[index] = pos[0]
-        self.by_elimination
+        board[index] = pos[0]
+        by_elimination
         break
       end
     end
   end
 
   def guess
-    cell = self.empty_cells.min_by {|pos| self.possible_numbers pos}
-    self.possible_numbers(cell).each do |pos|
+    cell = empty_cells.min_by {|pos| possible_numbers(pos).length}
+    possible_numbers(cell).each do |pos|
       test_board = TES.new(self.board.map {|cell| cell.to_s}.join(""))
       test_board.board[cell] = pos
       test_board.solve
-      if test_board.solved?
+      if test_board.solved? && test_board.valid?
         self.board = test_board.board
         break
       end
@@ -64,47 +68,10 @@ class TES
   end
 
   def valid?
-    self.board.each_with_index do |cell, i|
-      return false if self.get_row(i).select {|c| c == cell }.length > 1
-      return false if self.get_column(i).select {|c| c == cell }.length > 1
-      return false if self.get_square(i).select {|c| c == cell }.length > 1
-    end
-    return true
+    !self.board.include? -1
   end
 
 end
-
-games = ["105802000090076405200400819019007306762083090000061050007600030430020501600308900",
-        "005030081902850060600004050007402830349760005008300490150087002090000600026049503",
-        "105802000090076405200400819019007306762083090000061050007600030430020501600308900",
-        "005030081902850060600004050007402830349760005008300490150087002090000600026049503",
-        "290500007700000400004738012902003064800050070500067200309004005000080700087005109",
-        "080020000040500320020309046600090004000640501134050700360004002407230600000700450",
-        "608730000200000460000064820080005701900618004031000080860200039050000100100456200",
-        "370000001000700005408061090000010000050090460086002030000000000694005203800149500",
-        "000689100800000029150000008403000050200005000090240801084700910500000060060410000",
-        "030500804504200010008009000790806103000005400050000007800000702000704600610300500",
-        "096040001100060004504810390007950043030080000405023018010630059059070830003590007",
-        "000075400000000008080190000300001060000000034000068170204000603900000020530200000",
-        "300000000050703008000028070700000043000000000003904105400300800100040000968000200",
-        "302609005500730000000000900000940000000000109000057060008500006000000003019082040",
-        "096040001100060004504810390007950043030080000405023018010630059059070830003590007",
-        "105802000090076405200400819019007306762083090000061050007600030430020501600308900",
-        "005030081902850060600004050007402830349760005008300490150087002090000600026049503",
-        "096040001100060004504810390007950043030080000405023018010630059059070830003590007",
-        "105802000090076405200400819019007306762083090000061050007600030430020501600308900",
-        "005030081902850060600004050007402830349760005008300490150087002090000600026049503",
-        "290500007700000400004738012902003064800050070500067200309004005000080700087005109",
-        "080020000040500320020309046600090004000640501134050700360004002407230600000700450",
-        "608730000200000460000064820080005701900618004031000080860200039050000100100456200",
-        "370000001000700005408061090000010000050090460086002030000000000694005203800149500",
-        "000689100800000029150000008403000050200005000090240801084700910500000060060410000",
-        "030500804504200010008009000790806103000005400050000007800000702000704600610300500",
-        "000075400000000008080190000300001060000000034000068170204000603900000020530200000",
-        "300000000050703008000028070700000043000000000003904105400300800100040000968000200",
-        "302609005500730000000000900000940000000000109000057060008500006000000003019082040"]
-
-games.each {|game| Benchmark.bm {|x| x.report { g = TES.new(game); g.solve}}}
 
 class Board
   def initialize n;@n=n;end
