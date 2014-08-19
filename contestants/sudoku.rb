@@ -1,148 +1,87 @@
 class Sudoku
+  attr_accessor :board
+  def initialize(board_string)
+    @board_string = parse(board_string)
+    @board_string = @board_string.split("")
+    @board = Array.new(9) { Array.new(9)}
 
-  attr_accessor :aar
-  def initialize(r)
-    @aar = SBoard.aad(r)
+    build_board
+    @boxes = [[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2]],
+              [[3,0],[4,0],[5,0],[3,1],[4,1],[5,1],[3,2],[4,2],[5,2]],
+              [[6,0],[7,0],[8,0],[6,1],[7,1],[8,1],[6,2],[7,2],[8,2]],
+              [[0,3],[1,3],[2,3],[0,4],[1,4],[2,4],[0,5],[1,5],[2,5]],
+              [[3,3],[4,3],[5,3],[3,4],[4,4],[5,4],[3,5],[4,5],[5,5]],
+              [[6,3],[7,3],[8,3],[6,4],[7,4],[8,4],[6,5],[7,5],[8,5]],
+              [[0,6],[1,6],[2,6],[0,7],[1,7],[2,7],[0,8],[1,8],[2,8]],
+              [[3,6],[4,6],[5,6],[3,7],[4,7],[5,7],[3,8],[4,8],[5,8]],
+              [[6,6],[7,6],[8,6],[6,7],[7,7],[8,7],[6,8],[7,8],[8,8]]]
   end
+
+  def valid_move?(num,x,y)
+    return false if in_row?(num, x, y)
+    return false if in_col?(num, x, y)
+    return false if in_box?(num, x, y)
+    true
+  end
+
+  # -128676758
+  def parse board
+    board.split('').map { |c| c == '-' ? 0 : c.to_i + 1}.join
+  end
+
   def solve
-    recursive_solve @aar.aae
+    solve!
+    to_s
   end
-  def recursive_solve(aaq, depth=0)
-    return aaq if aaq.aam
-    return nil if aaq.aac
 
-    aaa(aaq).each do |guess|
-      aap = aaq.aae
-      aap.aaq[guess[0]] = guess[1]
-      solution =  recursive_solve(aap, depth+1)
-      return solution if solution
+  def solve!(x=0,y=0)
+    if y == 9
+      y = 0
+      x += 1
     end
-
-    return nil
+    if x == 9
+      return true
+    end
+    if board[x][y] == 0
+      (1..9).each do |try|
+        board[x][y] = try
+        if valid_move?(try,x,y)
+          return true if solve!(x,y+1)
+        end
+        board[x][y] = 0
+      end
+    else
+      return true if solve!(x,y+1)
+    end
+    false
   end
 
-  def aaa(aaq)
-    guesses = aab(aaq)
-    return [] if guesses.length == 0
-    guesses.select { |g| g[0] == guesses[0][0]}
+  def build_board
+    9.times{|x|
+      row = @board_string.shift(9)
+      9.times{|y|
+        board[x][y] = row[y].to_i
+      }
+    }
   end
 
-  def aab(aaq)
-    aaq.aai.each_with_index.map { |a, i| [i, a] }
-      .select { |i, a| aaq.aaq[i].nil? }
-      .sort_by { |i, a| a.length }
-      .map { |i, a| a.shuffle.map { |n| [i, n] } }
-      .flatten(1)
+  def in_row?(num,x,y)
+    9.times{|index| return true if board[x][index] == num && index != y }
+    false
+  end
+
+  def in_col?(num,x,y)
+    9.times{|index| return true if @board[index][y] == num && index != x }
+    false
+  end
+
+  def in_box?(num,x,y)
+    check_box = @boxes.select{ |box| box.include?([x,y]) }[0]
+    check_box.each{ |ix,iy| return true if @board[ix][iy] == num  &&  ix != x && iy != y}
+    false
+  end
+
+  def to_s
+    @board.flatten.map{|c| c - 1 }.join
   end
 end
-
-class SBoard
-  attr_accessor :aaq
-
-  def initialize
-    @aaq = [nil] * 81
-  end
-
-  def to_number
-    @aaq.map{ |s| s.nil? ? '-' : s.to_s }.join
-  end
-
-  def aac
-    aai.each_with_index
-      .select { |n, i| aaq[i].nil? }
-      .any? { |n, i| n.length == 0 }
-  end
-
-  def self.aad(number)
-    aap = new
-    number.split('').each_with_index { |n, i| aap.aaq[i] = n.to_i if n != '-' }
-    aap
-  end
-
-  def aae
-    aap = self.class.new
-    aaq.each_with_index do |n, i|
-      aap.aaq[i] = n
-    end
-    aap
-  end
-
-  def aag
-    [:row_col, :col_row, :box]
-  end
-
-  def aaf(x, y, aao=:row_col)
-    @aaq[aah(x, y, aao)]
-  end
-
-  def aah(x, y, aao=:row_col)
-    case aao
-    when :row_col
-      x * 9 + y
-    when :col_row
-      y * 9 + x
-    when :box
-      [0,3,6,27,30,33,54,57,60][x] + [0,1,2,9,10,11,18,19,20][y]
-    end
-  end
-
-  def aaj(index)
-    bits = 511
-    aag.each do |c|
-      axis_index = aan(index)
-      bits &= aal(axis_index, c)
-    end
-    bits
-  end
-
-  def aak
-    needed = []
-    aag.each do |c|
-      (0..8).each do |x|
-        bits = aal(x, c)
-        needed << bits
-      end
-    end
-    needed
-  end
-
-  def aal(x, aao)
-    bits = 0
-    (0..8).each do |y|
-      e = aaf(x, y, aao)
-      bits |= 1 << e unless e.nil?
-    end
-    511 ^ bits
-  end
-
-  def aai
-    aaj = @aaq.map { |n| n.nil? ? 511 : 0 }
-    aag.each do |c|
-      (0..8).each do |x|
-        bits = aal(x, c)
-        (0..8).each { |y| aaj[aah(x, y, c)] &= bits }
-      end
-    end
-    aaj.map { |a| lok(a) }
-  end
-
-  def lok(bits)
-    (0..8).select { |n| (bits & (1 << n)) != 0 }
-  end
-
-  def aam
-    aak.all? { |bits| bits == 0 }
-  end
-
-  def aan(index, aao=:row_col)
-    case aao
-    when :row_col
-      (index / 9)
-    when :col_row
-      index % 9
-    when :box
-      (index / 27) * 3 + (index / 3) % 3
-    end
-  end
-end
-
