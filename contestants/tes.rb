@@ -35,7 +35,7 @@ class TES
   def solve
     by_elimination
     guess unless solved? || !valid?
-    board.join("")
+    Board.new(board.join(""))
   end
 
   def by_elimination
