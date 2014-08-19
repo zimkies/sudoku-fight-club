@@ -41,7 +41,6 @@ class TES
       empty_cells = get_empty_cells(sboard)
       empty_cells.each do |coords|
         possibilities = possible_numbers(coords, sboard)
-        p possibilities
         return -1 if possibilities.length < 1
         if possibilities.length == 1
           sboard[coords[0]][coords[1]] = possibilities[0]
