@@ -42,8 +42,6 @@ class TES
   end
 
   def all_relevant_coordinates(coord)
-    raise 'row out of bounds' unless (0..8).to_a.include?(coord[0])
-    raise 'Column out of bounds' unless (0..8).to_a.include?(coord[1])
     relevant_coords = Array.new(3) { [] }
     for index in 0..8 do
       relevant_coords[0] << [coord[0], index]
@@ -94,7 +92,6 @@ class TES
     cell = [3,0]
     guess = 8
     new_sboard[cell[0]][cell[1]] = guess
-    puts "Coordinate: #{cell} Guess: #{guess}"
     return new_sboard if by_elimination(new_sboard) != -1
     return sboard
   end
