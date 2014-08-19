@@ -1,74 +1,74 @@
 require 'benchmark'
 
 class TES
-  attr_accessor :board
-  def initialize(board)
-    @board = board.split("").map {|num| num.to_i}
+  attr_accessor :b
+  def initialize(b)
+    @b = b.split("")
   end
 
-  def solved?
-    !board.include? 0
+  def s?
+    !b.include? "0"
   end
 
-  def empty_cells
-    board.map.with_index {|cell, i| cell == 0 ? i : nil}.select {|cell| cell }
+  def ec
+    b.map.with_index {|c, i| c == "0" ? i : nil}.select {|c| c }
   end
 
-  def get_row index
-    remainder = index % 9
-    start = index - remainder
-    (start...start+9).to_a.map {|i| board[i]}
+  def r j
+    remainder = j % 9
+    start = j - remainder
+    (start...start+9).to_a.map {|i| b[i]}
   end
 
-  def get_column index
-    board.select.with_index {|cell, i| i%9 == index % 9}
+  def c j
+    b.select.with_index {|c, i| i%9 == j % 9}
   end
 
-  def get_square index
-    board.select.with_index {|cell, i| (i/27)*3 + (i/3)%3 == (index/27)*3 + (index/3)%3}
+  def s j
+    b.select.with_index {|c, i| (i/27)*3 + (i/3)%3 == (j/27)*3 + (j/3)%3}
   end
 
-  def possible_numbers index
-    (1..9).to_a - get_row(index) - get_column(index) - get_square(index)
+  def pn j
+    (1..9).to_a - r(j) - c(j) - s(j)
   end
 
   def solve
-    by_elimination
-    guess unless solved? || !valid?
-    Board.new(board.join(""))
+    e
+    g unless s? || !v?
+    Board.new(b.join(""))
   end
 
-  def by_elimination
-    empty_cells.each do |index|
-      pos = possible_numbers index
-      if pos.length == 0
-        board[index] = -1
+  def e
+    ec.each do |j|
+      p = pn j
+      if p.length == 0
+        b[j] = -1
         break
       end
-      if pos.length == 1
-        board[index] = pos[0]
-        by_elimination
-        break
-      end
-    end
-  end
-
-  def guess
-    cell = empty_cells.min_by {|pos| possible_numbers(pos).length}
-    possible_numbers(cell).each do |pos|
-      test_board = TES.new(self.board.map {|cell| cell.to_s}.join(""))
-      test_board.board[cell] = pos
-      test_board.solve
-      if test_board.solved? && test_board.valid?
-        self.board = test_board.board
+      if p.length == 1
+        b[j] = p[0]
+        e
         break
       end
     end
-    self.board
   end
 
-  def valid?
-    !self.board.include? -1
+  def g
+    c = ec.min_by {|p| pn(p).length}
+    pn(c).each do |p|
+      t = TES.new(@b.join(""))
+      t.b[c] = p
+      t.solve
+      if t.s? && t.v?
+        @b = t.b
+        break
+      end
+    end
+    @b
+  end
+
+  def v?
+    !@b.include? -1
   end
 
 end
