@@ -1,67 +1,74 @@
+require 'benchmark'
+
 class TES
-  def initialize(board_string)
-    @sudoku_board = []
-    9.times { @sudoku_board<<board_string.slice!(0, 9).split("").map(&:to_i) }
+  attr_accessor :board
+  def initialize(board)
+    @board = board.split("").map {|num| num.to_i}
   end
 
-  def all_cells_filled?(sboard)
-    sboard.none?{|r| r.include?(0) }
+  def solved?
+    !board.include? 0
   end
 
-  def get_empty_cells(sboard)
-    empty_cells = []
-    sboard.each_with_index {|r,i| r.each_with_index { |c,j| empty_cells << [i,j] if c == 0}}
-    empty_cells
+  def empty_cells
+    board.map.with_index {|cell, i| cell == 0 ? i : nil}.select {|cell| cell }
   end
 
-  def all_relevant_coordinates(coord)
-    relevant_coords = Array.new(3){[]}
-    (0..8).map do |i|
-      relevant_coords[0] << [coord[0], i]
-      relevant_coords[1] << [i, coord[1]]
-      relevant_coords[2] << [(coord[0]/3)*3+i/3,(coord[1]/3)*3+i%3]
-    end
-    return relevant_coords
+  def get_row index
+    remainder = index % 9
+    start = index - remainder
+    (start...start+9).to_a.map {|i| board[i]}
   end
 
-  def possible_numbers(coord, sboard)
-    (0..9).to_a.reject{|i|
-      all_relevant_coordinates(coord).inject([]){|a,s| a + s.map{|c| sboard[c[0]][c[1]]}}.include?(i)
-    }
+  def get_column index
+    board.select.with_index {|cell, i| i%9 == index % 9}
+  end
+
+  def get_square index
+    board.select.with_index {|cell, i| (i/27)*3 + (i/3)%3 == (index/27)*3 + (index/3)%3}
+  end
+
+  def possible_numbers index
+    (1..9).to_a - get_row(index) - get_column(index) - get_square(index)
   end
 
   def solve
-    Board.new(by_elimination(@sudoku_board).flatten.map{|i| i - 1}.join)
+    by_elimination
+    guess unless solved? || !valid?
+    Board.new(board.join(""))
   end
 
-  def by_elimination(sboard)
-    changed = true
-    while changed do
-      changed = false
-      empty_cells = get_empty_cells(sboard)
-      empty_cells.each do |coords|
-        possibilities = possible_numbers(coords, sboard)
-        return -1 if possibilities.length < 1
-        if possibilities.length == 1
-          sboard[coords[0]][coords[1]] = possibilities[0]
-          changed = true
-        end
+  def by_elimination
+    empty_cells.each do |index|
+      pos = possible_numbers index
+      if pos.length == 0
+        board[index] = -1
+        break
+      end
+      if pos.length == 1
+        board[index] = pos[0]
+        by_elimination
+        break
       end
     end
-    sboard = guess(sboard) if !(all_cells_filled?(sboard))
-    return sboard
   end
 
-  def guess(sboard)
-    b = -1
-    cell = get_empty_cells(sboard).first
-    new_sboard = Marshal.load(Marshal.dump(sboard))
-    possible_numbers(cell, new_sboard).each do |guess|
-      new_sboard[cell[0]][cell[1]] = guess
-      b = by_elimination(new_sboard)
-      break if b != -1
+  def guess
+    cell = empty_cells.min_by {|pos| possible_numbers(pos).length}
+    possible_numbers(cell).each do |pos|
+      test_board = TES.new(self.board.map {|cell| cell.to_s}.join(""))
+      test_board.board[cell] = pos
+      test_board.solve
+      if test_board.solved? && test_board.valid?
+        self.board = test_board.board
+        break
+      end
     end
-    return b
+    self.board
+  end
+
+  def valid?
+    !self.board.include? -1
   end
 
 end
