@@ -101,13 +101,7 @@ class TES
 end
 
 class Board
-  def initialize(n)
-    @n = n
-  end
-
-  def self.from_file(file)
-    new(file.map{|l|l.strip.gsub('_','0').gsub(' ','')}.join(''))
-  end
-
+  def initialize n;@n=n;end
+  def self.from_file f;new(f.map{|l|l.strip.gsub(' ','').gsub('_','0')}.join);end
   def to_number;@n;end
 end
