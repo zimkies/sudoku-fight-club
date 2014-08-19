@@ -1,11 +1,7 @@
 class TES
   def initialize(board_string)
     @sudoku_board = []
-    until board_string.length == 0
-        row = board_string.slice!(0, 9).split("")
-        row.map! { |num| num.to_i }
-        @sudoku_board << row
-    end
+    9.times { @sudoku_board<<board_string.slice!(0, 9).split("").map(&:to_i) }
   end
 
   def all_cells_filled?(sboard)
@@ -66,7 +62,7 @@ class TES
         end
      end
     end
-    sboard = by_common_possibles(sboard) if !(all_cells_filled?(sboard))
+    sboard = guess(sboard) if !(all_cells_filled?(sboard))
     return sboard
   end
 
