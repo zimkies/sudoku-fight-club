@@ -56,6 +56,7 @@ class Board
 
   def initialize
     @board = [nil] * 81
+    @considered_axes = {}
   end
 
   # The board has a direct conflict
@@ -161,8 +162,11 @@ class Board
   def needed_numbers
     needed = []
     coordinate_systems.each do |c|
+      @considered_axes[c] ||= {}
       (0..8).each do |x|
+        bits = (@considered_axes[c][x] == 1 ? 0 : axis_missing(x,c))
         bits = axis_missing(x, c)
+        @considered_axes[c][x] = 1 if bits == 0
         needed << bits
       end
     end
