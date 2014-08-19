@@ -122,8 +122,9 @@ namespace :solution do
       end
       total_time += measure.real
       solution = solution.to_number if solution.respond_to? :to_number
-      #solved = DefaultBoard.from_number(solution).solved?
-      #raise "Solution is not valid:\nPUZZLE: \n#{board.to_s}\nSOLUTION: \n#{solution.to_s}" if not solved
+      solved = DefaultBoard.from_number(solution).solved?
+      p solved
+      # raise "Solution is not valid:\nPUZZLE: \n#{board.to_s}\nSOLUTION: \n#{solution.to_s}" if not solved
     end
     average_time = all_files.length == 0 ? 0 : total_time / all_files.length
     puts "All #{all_files.count} test puzzles were correctly solved in an average of #{average_time} seconds"
