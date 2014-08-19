@@ -46,7 +46,7 @@ class TES
           sboard[coords[0]][coords[1]] = possibilities[0]
           changed = true
         end
-     end
+      end
     end
     sboard = guess(sboard) if !(all_cells_filled?(sboard))
     return sboard
