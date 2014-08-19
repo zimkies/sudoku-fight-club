@@ -8,21 +8,6 @@ class TES
     end
   end
 
-  def display_board(sboard = @sudoku_board)
-    board_string = ""
-    sboard.each_with_index do |row, row_index|
-      board_string << "-"*21 + "\n" if row_index % 3 == 0
-      row.each_with_index do |cell, cell_index|
-        board_string << "| " if cell_index % 3 == 0 && cell_index != 0
-        board_string << cell.to_s + " " unless cell == 0
-        board_string << "  " if cell == 0
-      end
-      board_string << "\n"
-    end
-    board_string << "-"*21
-    return board_string
-  end
-
   def all_cells_filled?(sboard)
     empty_cells = 0
     sboard.each do |row|
