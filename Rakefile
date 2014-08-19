@@ -121,7 +121,8 @@ namespace :solution do
         solution = SolutionClass.new(board.to_number).solve
       end
       total_time += measure.real
-      solved = DefaultBoard.from_number(solution.to_number).solved?
+      solution = solution.to_number if solution.respond_to? :to_number
+      solved = DefaultBoard.from_number(solution).solved?
       raise "Solution is not valid:\nPUZZLE: \n#{board.to_s}\nSOLUTION: \n#{solution.to_s}" if not solved
     end
     average_time = all_files.length == 0 ? 0 : total_time / all_files.length
