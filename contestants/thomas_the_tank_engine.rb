@@ -1,4 +1,4 @@
-class TES
+class Sudoku
   def initialize(board_string)
     @sudoku_board = []
     until board_string.length == 0
@@ -27,6 +27,8 @@ class TES
   end
 
   def all_relevant_coordinates(coord)
+    raise 'row out of bounds' unless (0..8).to_a.include?(coord[0])
+    raise 'Column out of bounds' unless (0..8).to_a.include?(coord[1])
     relevant_coords = Array.new(3) { [] }
     for index in 0..8 do
       relevant_coords[0] << [coord[0], index]
@@ -46,9 +48,8 @@ class TES
     return possibilities
   end
 
-  def solve
+  def solve!
     @sudoku_board = by_elimination(@sudoku_board)
-    Board.new(@sudoku_board.flatten.map{|i| i - 1}.join)
   end
 
   def by_elimination(sboard)
@@ -58,35 +59,23 @@ class TES
       empty_cells = get_empty_cells(sboard)
       empty_cells.each do |coords|
         possibilities = possible_numbers(coords, sboard)
-        p possibilities
         return -1 if possibilities.length < 1
         if possibilities.length == 1
-          sboard[coords[0]][coords[1]] = possibilities[0]
+          sboard[coords[0]][coords[1]] = possibilities.first
           changed = true
         end
      end
     end
-    sboard = guess(sboard) if !(all_cells_filled?(sboard))
-    p sboard
+    sboard = guess(sboard) if !(changed) && !(all_cells_filled?(sboard))
     return sboard
   end
 
   def guess(sboard)
-    b = -1
-    cell = get_empty_cells(sboard).first
+    cell = get_empty_cells(sboard).sample
     new_sboard = Marshal.load(Marshal.dump(sboard))
-    possible_numbers(cell, new_sboard).each do |guess|
-      new_sboard[cell[0]][cell[1]] = guess
-      b = by_elimination(new_sboard)
-      break if b != -1
-    end
-    return b
+    guess = possible_numbers(cell, new_sboard).sample
+    new_sboard[cell[0]][cell[1]] = guess
+    return new_sboard if by_elimination(new_sboard) != -1
+    return sboard
   end
-
-end
-
-class Board
-  def initialize n;@n=n;end
-  def self.from_file f;new(f.map{|l|l.strip.gsub(' ','').gsub('_','0')}.join);end
-  def to_number;@n;end
 end
