@@ -1,73 +1,20 @@
+require 'benchmark'
 class TES
-  def initialize(board_string)
-    @sudoku_board = []
-    9.times { @sudoku_board<<board_string.slice!(0, 9).split("").map(&:to_i) }
-  end
-
-  def all_cells_filled?(sboard)
-    sboard.none?{|r| r.include?(0) }
-  end
-
-  def get_empty_cells(sboard)
-    empty_cells = []
-    sboard.each_with_index {|r,i| r.each_with_index { |c,j| empty_cells << [i,j] if c == 0}}
-    empty_cells
-  end
-
-  def all_relevant_coordinates(coord)
-    relevant_coords = Array.new(3){[]}
-    (0..8).map do |i|
-      relevant_coords[0] << [coord[0], i]
-      relevant_coords[1] << [i, coord[1]]
-      relevant_coords[2] << [(coord[0]/3)*3+i/3,(coord[1]/3)*3+i%3]
-    end
-    return relevant_coords
-  end
-
-  def possible_numbers(coord, sboard)
-    (0..9).to_a.reject{|i|
-      all_relevant_coordinates(coord).inject([]){|a,s| a + s.map{|c| sboard[c[0]][c[1]]}}.include?(i)
-    }
-  end
-
-  def solve
-    Board.new(by_elimination(@sudoku_board).flatten.map{|i| i - 1}.join)
-  end
-
-  def by_elimination(sboard)
-    changed = true
-    while changed do
-      changed = false
-      empty_cells = get_empty_cells(sboard)
-      empty_cells.each do |coords|
-        possibilities = possible_numbers(coords, sboard)
-        return -1 if possibilities.length < 1
-        if possibilities.length == 1
-          sboard[coords[0]][coords[1]] = possibilities[0]
-          changed = true
-        end
-      end
-    end
-    sboard = guess(sboard) if !(all_cells_filled?(sboard))
-    return sboard
-  end
-
-  def guess(sboard)
-    b = -1
-    cell = get_empty_cells(sboard).first
-    new_sboard = Marshal.load(Marshal.dump(sboard))
-    possible_numbers(cell, new_sboard).each do |guess|
-      new_sboard[cell[0]][cell[1]] = guess
-      b = by_elimination(new_sboard)
-      break if b != -1
-    end
-    return b
-  end
-
+attr_accessor :b
+def initialize(b);@b=b.split("");end
+def s?;!b.index"_"; end
+def ec;b.map.with_index{|c,i|c=="_"?i:nil}.select{|c|c};end
+def r j;l=j%9;start=j-l;(start..start+8).to_a.map{|i|b[i]};end
+def c j;b.select.with_index{|c,i|i%9==j%9};end
+def s j;b.select.with_index{|c,i|(i/27)*3+(i/3)%3==(j/27)*3+(j/3)%3};end
+def pn j;(1..9).to_a-r(j)-c(j)-s(j);end
+def solve;e;g unless s?||!v?;Board.new(b.join);end
+def e;ec.each{|j|p=pn j;if p.length==0;b[j]=-1;break;end;if p.length==1;b[j]=p[0];e;break;end;};end
+def g;c=ec.min_by{|p|pn(p).length};pn(c).each{|p|t=TES.new(@b.join);t.b[c]=p;t.solve;if t.s? && t.v?;@b=t.b;break;end;};@b;end
+def v?;!@b.index -1;end
 end
-
 class Board
-  def initialize n;@n=n;end
-  def self.from_file f;new(f.map{|l|l.strip.gsub(' ','').gsub('_','0')}.join);end
-  def to_number;@n;end
+def initialize n;@n=n;end
+def self.from_file f;new(f.map{|l|l.strip.gsub(' ','')}.join);end
+def to_number;@n;end
 end
