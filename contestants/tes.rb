@@ -2,11 +2,14 @@ class TES
   attr_accessor :board
   def initialize(board)
     @board = board.split("")
-    # 9.times { @sudoku_board<<board_string.slice!(0, 9).split("").map(&:to_i) }
   end
 
   def solved?
     !self.board.include? 0
+  end
+
+  def empty_cells
+    self.board.map.with_index {|cell, i| cell == 0 ? i : nil}.select {|cell| cell }
   end
 
   def get_row index
@@ -18,25 +21,25 @@ class TES
   def get_column index
     self.board.select.with_index {|cell, i| i%9 == index % 9}
   end
-  # def all_cells_filled?(sboard)
-  #   sboard.none?{|r| r.include?(0) }
-  # end
 
-  # def get_empty_cells(sboard)
-  #   empty_cells = []
-  #   sboard.each_with_index {|r,i| r.each_with_index { |c,j| empty_cells << [i,j] if c == 0}}
-  #   empty_cells
-  # end
+  def get_square index
+    self.board.select.with_index {|cell, i| i/27 + (i%9)/3 == index/27 + (index%9)/3}
+  end
 
-  # def all_relevant_coordinates(coord)
-  #   relevant_coords = Array.new(3){[]}
-  #   (0..8).map do |i|
-  #     relevant_coords[0] << [coord[0], i]
-  #     relevant_coords[1] << [i, coord[1]]
-  #     relevant_coords[2] << [(coord[0]/3)*3+i/3,(coord[1]/3)*3+i%3]
-  #   end
-  #   return relevant_coords
-  # end
+  def possible_numbers index
+    (1..9).to_a - self.get_row(index) - self.get_column(index) - self.get_square(index)
+  end
+
+  def by_elimination
+    self.empty_cells.each do |index|
+      pos = self.possible_numbers index
+      if pos.length == 1
+        self.board[index] = pos[0]
+        self.by_elimination
+        break
+      end
+    end
+  end
 
   # def possible_numbers(coord, sboard)
   #   (0..9).to_a.reject{|i|
