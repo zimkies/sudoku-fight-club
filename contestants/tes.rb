@@ -1,7 +1,7 @@
 class TES
   attr_accessor :board
   def initialize(board)
-    @board = board.split("")
+    @board = board.split("").map {|num| num.to_i}
   end
 
   def solved?
@@ -23,11 +23,17 @@ class TES
   end
 
   def get_square index
-    self.board.select.with_index {|cell, i| i/27 + (i%9)/3 == index/27 + (index%9)/3}
+    self.board.select.with_index {|cell, i| (i/27)*3 + (i/3)%3 == (index/27)*3 + (index/3)%3}
   end
 
   def possible_numbers index
     (1..9).to_a - self.get_row(index) - self.get_column(index) - self.get_square(index)
+  end
+
+  def solve
+    self.by_elimination
+    self.guess unless self.solved?
+    self.board.join("")
   end
 
   def by_elimination
@@ -41,47 +47,48 @@ class TES
     end
   end
 
-  # def possible_numbers(coord, sboard)
-  #   (0..9).to_a.reject{|i|
-  #     all_relevant_coordinates(coord).inject([]){|a,s| a + s.map{|c| sboard[c[0]][c[1]]}}.include?(i)
-  #   }
-  # end
+  def guess
+    cell = self.empty_cells.min_by {|pos| self.possible_numbers pos}
+    self.possible_numbers(cell).each do |pos|
+      test_board = TES.new(self.board.map {|cell| cell.to_s}.join(""))
+      test_board.board[cell] = pos
+      test_board.solve
+      if test_board.solved?
+        self.board = test_board.board
+        break
+      end
+    end
+    self.board
+  end
 
-  # def solve
-  #   Board.new(by_elimination(@sudoku_board).flatten.map{|i| i - 1}.join)
-  # end
-
-  # def by_elimination(sboard)
-  #   changed = true
-  #   while changed do
-  #     changed = false
-  #     empty_cells = get_empty_cells(sboard)
-  #     empty_cells.each do |coords|
-  #       possibilities = possible_numbers(coords, sboard)
-  #       return -1 if possibilities.length < 1
-  #       if possibilities.length == 1
-  #         sboard[coords[0]][coords[1]] = possibilities[0]
-  #         changed = true
-  #       end
-  #     end
-  #   end
-  #   sboard = guess(sboard) if !(all_cells_filled?(sboard))
-  #   return sboard
-  # end
-
-  # def guess(sboard)
-  #   b = -1
-  #   cell = get_empty_cells(sboard).first
-  #   new_sboard = Marshal.load(Marshal.dump(sboard))
-  #   possible_numbers(cell, new_sboard).each do |guess|
-  #     new_sboard[cell[0]][cell[1]] = guess
-  #     b = by_elimination(new_sboard)
-  #     break if b != -1
-  #   end
-  #   return b
-  # end
+  def valid?
+    self.board.each_with_index do |cell, i|
+      return false if self.get_row(i).select {|c| c == cell }.length > 1
+      return false if self.get_column(i).select {|c| c == cell }.length > 1
+      return false if self.get_square(i).select {|c| c == cell }.length > 1
+    end
+    return true
+  end
 
 end
+
+easy_game = TES.new("105802000090076405200400819019007306762083090000061050007600030430020501600308900")
+p easy_game.solve
+
+
+# "
+# 105 802 000
+# 090 076 405
+# 200 400 819
+
+# 019 007 306
+# 762 083 090
+# 000 061 050
+
+# 007 600 030
+# 430 020 501
+# 600 308 900
+# "
 
 class Board
   def initialize n;@n=n;end
