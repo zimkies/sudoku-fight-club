@@ -1,54 +1,37 @@
 class TES
   def initialize(board_string)
     @sudoku_board = []
-    until board_string.length == 0
-        row = board_string.slice!(0, 9).split("")
-        row.map! { |num| num.to_i }
-        @sudoku_board << row
-    end
+    9.times { @sudoku_board<<board_string.slice!(0, 9).split("").map(&:to_i) }
   end
 
   def all_cells_filled?(sboard)
-    empty_cells = 0
-    sboard.each do |row|
-      row.each { |cell| return false if cell == 0 }
-    end
-    return true
+    sboard.none?{|r| r.include?(0) }
   end
 
   def get_empty_cells(sboard)
     empty_cells = []
-    sboard.each_with_index do |row, row_index|
-      row.each_with_index do |cell, column_index|
-        empty_cells << [row_index, column_index] if cell == 0
-      end
-    end
-    return empty_cells
+    sboard.each_with_index {|r,i| r.each_with_index { |c,j| empty_cells << [i,j] if c == 0}}
+    empty_cells
   end
 
   def all_relevant_coordinates(coord)
-    relevant_coords = Array.new(3) { [] }
-    for index in 0..8 do
-      relevant_coords[0] << [coord[0], index]
-      relevant_coords[1] << [index, coord[1]]
-      relevant_coords[2] << [(coord[0]/3)*3 + index/3, (coord[1]/3)*3 + index%3]
+    relevant_coords = Array.new(3){[]}
+    (0..8).map do |i|
+      relevant_coords[0] << [coord[0], i]
+      relevant_coords[1] << [i, coord[1]]
+      relevant_coords[2] << [(coord[0]/3)*3+i/3,(coord[1]/3)*3+i%3]
     end
     return relevant_coords
   end
 
   def possible_numbers(coord, sboard)
-    possibilities = (0..9).to_a
-    used = []
-    all_relevant_coordinates(coord).each do |section|
-      section.each { |coord| used << (sboard[coord[0]][coord[1]]) }
-    end
-    used.uniq.each { |num| possibilities.delete(num) }
-    return possibilities
+    (0..9).to_a.reject{|i|
+      all_relevant_coordinates(coord).inject([]){|a,s| a + s.map{|c| sboard[c[0]][c[1]]}}.include?(i)
+    }
   end
 
   def solve
-    @sudoku_board = by_elimination(@sudoku_board)
-    Board.new(@sudoku_board.flatten.map{|i| i - 1}.join)
+    Board.new(by_elimination(@sudoku_board).flatten.map{|i| i - 1}.join)
   end
 
   def by_elimination(sboard)
@@ -67,7 +50,6 @@ class TES
      end
     end
     sboard = guess(sboard) if !(all_cells_filled?(sboard))
-    p sboard
     return sboard
   end
 
