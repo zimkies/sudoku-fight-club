@@ -165,7 +165,6 @@ class Board
       @considered_axes[c] ||= {}
       (0..8).each do |x|
         bits = (@considered_axes[c][x] == 1 ? 0 : axis_missing(x,c))
-        bits = axis_missing(x, c)
         @considered_axes[c][x] = 1 if bits == 0
         needed << bits
       end
